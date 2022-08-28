@@ -1,13 +1,20 @@
-# Sample Hardhat Project
+# Simple p2p trading
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+## Usage
+List.sol is contract that allows the user to list their tokens(nfts) by deploying a self-owned contract.
 
-Try running some of the following tasks:
+### Functions
+-add an item to the tokens list for sale with user defined price
+```sh
+List.addItem(address, uint, uint)
+```
 
-```shell
-npx hardhat help
-npx hardhat test
-GAS_REPORT=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.ts
+-delete an item from the tokens list
+```sh
+List.deleteItem(string)
+```
+
+-change the price of an item from the tokens list
+```sh
+List.changePrice(string, uint)
 ```
