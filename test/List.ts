@@ -19,35 +19,36 @@ describe('List', () => {
             expect(id).to.equal(1);
             return id
         });
-
         return { owner, signer1, signer2, id1, id2, token };
     }
 
     it('add item', async () => {
         const r = await init();
-
         const price = 1;
-        const key = `${r.token.address}${r.id2}`.toLowerCase();
         const List = await ethers.getContractFactory('List', r.signer1);
         const list = await List.deploy();
         await list.deployed();
-        await list.connect(r.signer1).addItem(key, price).then(async (tx) => {
+
+        await r.token.connect(r.signer1).approve(list.address, r.id1);
+        await list.connect(r.signer1).addItem(r.token.address, r.id1, price).then(async (tx) => {
             const receipt = await tx.wait();
             const args = receipt.events![0].args!;
-            expect(args._key).to.equal(key);
+            expect(args._address).to.equal(r.token.address);
+            expect(args._id).to.equal(r.id1);
             expect(args._price).to.equal(price);
         });
     })
 
     it('delete item', async () => {
         const r = await init();
-
         const price = 1;
         const key = `${r.token.address}${r.id2}`.toLowerCase();
         const List = await ethers.getContractFactory('List', r.signer1);
         const list = await List.deploy();
         await list.deployed();
-        await list.connect(r.signer1).addItem(key, price);
+
+        await r.token.connect(r.signer1).approve(list.address, r.id1);
+        await list.connect(r.signer1).addItem(r.token.address, r.id1, price);
         await list.connect(r.signer2).tokens(key).then((price) => {
             expect(price).to.equal(price);
         });
@@ -59,14 +60,15 @@ describe('List', () => {
 
     it('change price', async () => {
         const r = await init();
-
         const price1 = 1;
         const price2 = 2;
         const key = `${r.token.address}${r.id2}`.toLowerCase();
         const List = await ethers.getContractFactory('List', r.signer2);
         const list = await List.deploy();
         await list.deployed();
-        await list.connect(r.signer2).addItem(key, price1);
+
+        await r.token.connect(r.signer2).approve(list.address, r.id2);
+        await list.connect(r.signer2).addItem(r.token.address, r.id2, price1);
         await list.connect(r.signer1).tokens(key).then((price) => {
             expect(price).to.equal(price1);
         });
@@ -78,19 +80,33 @@ describe('List', () => {
 
     it('buy', async () => {
         const r = await init();
-
         const price = 1;
-        const key = `${r.token.address}${r.id2}`.toLowerCase();
         const tip = {value: ethers.utils.parseEther("1")};
         const List = await ethers.getContractFactory('List', r.signer2);
         const list = await List.deploy();
         await list.deployed();
 
         await r.token.connect(r.signer2).approve(list.address, r.id2);
-        await list.connect(r.signer2).addItem(key, price);
+        await list.connect(r.signer2).addItem(r.token.address, r.id2, price);
         await list.connect(r.signer1).buy(r.token.address, r.id2, tip);
         await r.token.ownerOf(r.id2).then(async (owner) => {
             expect(owner).to.equal(await r.signer1.getAddress());
         })
+    })
+
+    it('withdraw', async () => {
+        const r = await init();
+        const List = await ethers.getContractFactory('List', r.signer2);
+        const list = await List.deploy();
+        await list.deployed();
+
+        expect(await ethers.provider.getBalance(list.address)).to.equal(0);
+        await r.signer1.sendTransaction({
+            to: list.address,
+            value: 100
+        });
+        expect(await ethers.provider.getBalance(list.address)).to.equal(100);
+        await list.connect(r.signer2).withdraw();
+        expect(await ethers.provider.getBalance(list.address)).to.equal(0);
     })
 })

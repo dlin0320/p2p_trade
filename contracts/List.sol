@@ -7,40 +7,37 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract List is Ownable {
-    mapping(string => uint16) public tokens;
-    address private tradeAddress;
+    mapping(string => uint256) public tokens;
 
     event ItemSold(address _address, uint256 _id, uint256 _price);
-    event ItemAdded(string _key, uint16 _price);
+    event ItemAdded(address _address, uint256 _id, uint256 _price);
     event ItemDeleted(string _key);
-    event PriceChanged(string _key, uint16 _price);
+    event PriceChanged(string _key, uint256 _price);
+    event Received(address _address, uint256 _amount);
 
     function getKey(address _address, uint256 _id) internal pure returns (string memory) {
-        string memory str = string.concat(
+        return string.concat(
             Strings.toHexString(uint256(uint160(_address)), 20), 
             Strings.toString(_id)
         );
-        return str;
     }
 
     function buy(address _address, uint256 _id) external payable {
-        uint _price = tokens[getKey(_address, _id)];
+        uint256 _price = tokens[getKey(_address, _id)];
         require(_price != 0, 'token not found');
         require(_price <= msg.value, 'pay more eth');
-        require(msg.sender != owner());
-        IERC721 _token = IERC721(_address);
-        _token.safeTransferFrom(owner(), msg.sender, _id);
+        IERC721 token = IERC721(_address);
+        address _from = token.ownerOf(_id);
+        require(msg.sender != owner() && msg.sender != _from);
+        token.safeTransferFrom(owner(), msg.sender, _id);
         emit ItemSold(_address, _id, msg.value);
     }
 
-    function setTrade(address _trade) external onlyOwner {
-        tradeAddress = _trade;
-    }
-
-    function addItem(string memory _key, uint16 _price) external onlyOwner {
+    function addItem(address _address, uint256 _id, uint256 _price) external onlyOwner {
         require(_price > 0);
-        tokens[_key] = _price;
-        emit ItemAdded(_key, _price);
+        require(IERC721(_address).getApproved(_id) == address(this));
+        tokens[getKey(_address, _id)] = _price;
+        emit ItemAdded(_address, _id, _price);
     }
 
     function deleteItem(string memory _key) external onlyOwner {
@@ -48,7 +45,7 @@ contract List is Ownable {
         emit ItemDeleted(_key);
     }
 
-    function changePrice(string memory _key, uint16 _price) external onlyOwner {
+    function changePrice(string memory _key, uint256 _price) external onlyOwner {
         require(tokens[_key] != 0, 'token not found');
         tokens[_key] = _price;
         emit PriceChanged(_key, _price);
@@ -56,5 +53,9 @@ contract List is Ownable {
 
     function withdraw() public payable onlyOwner {
         require(payable(owner()).send(address(this).balance));
+    }
+
+    receive() external payable {
+        emit Received(msg.sender, msg.value);
     }
 }
