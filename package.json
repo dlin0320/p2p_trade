@@ -4,9 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npx hardhat test --network localhost",
-    "compile": "npx hardhat compile",
-    "deploy": "npx hardhat run scripts/deploy.ts --network localhost"
+    "test": "npx hardhat test",
+    "compile": "npx hardhat compile"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +16,7 @@
     "hardhat": "^2.10.2"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.7.3"
+    "@openzeppelin/contracts": "^4.7.3",
+    "dotenv": "^16.0.1"
   }
 }

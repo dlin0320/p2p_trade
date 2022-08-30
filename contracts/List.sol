@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract List is Ownable {
     mapping(string => uint256) public tokens;
 
-    event ItemSold(address _address, uint256 _id, uint256 _price);
+    event ItemSold(address _address, uint256 _id, uint256 _price, address _buyer);
     event ItemAdded(address _address, uint256 _id, uint256 _price);
     event ItemDeleted(string _key);
     event PriceChanged(string _key, uint256 _price);
@@ -23,14 +23,15 @@ contract List is Ownable {
     }
 
     function buy(address _address, uint256 _id) external payable {
-        uint256 _price = tokens[getKey(_address, _id)];
-        require(_price != 0, 'token not found');
-        require(_price <= msg.value, 'pay more eth');
+        string memory _key = getKey(_address, _id);
+        require(tokens[_key] != 0, 'token not found');
+        require(tokens[_key] <= msg.value, 'pay more eth');
         IERC721 token = IERC721(_address);
         address _from = token.ownerOf(_id);
         require(msg.sender != owner() && msg.sender != _from);
         token.safeTransferFrom(owner(), msg.sender, _id);
-        emit ItemSold(_address, _id, msg.value);
+        delete tokens[_key];
+        emit ItemSold(_address, _id, msg.value, _from);
     }
 
     function addItem(address _address, uint256 _id, uint256 _price) external onlyOwner {

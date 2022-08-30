@@ -5,11 +5,8 @@ async function main() {
   const MyToken = await ethers.getContractFactory('MyToken', owner);
   const token = await MyToken.deploy();
   await token.deployed();
-  const List = await ethers.getContractFactory('List', owner);
-  const list = await List.deploy();
-  await list.deployed();
   
-  console.log('contracts deployed');
+  console.log(`token deployed to ${token.address}`);
 }
 
 main().catch((error) => {
